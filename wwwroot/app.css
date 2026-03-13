@@ -271,6 +271,117 @@ a:hover { text-decoration: underline; }
 .deck-name { font-family: 'Roboto Condensed', sans-serif; font-weight: 600; font-size: .9rem; }
 .deck-preview { font-size: .8rem; color: var(--text-muted); }
 
+/* ── Deck Customizer ── */
+.customize-toggle-row {
+    margin-top: -.25rem;
+    margin-bottom: .75rem;
+}
+.btn-customize {
+    font-family: 'Roboto Condensed', sans-serif;
+    font-size: .8rem;
+    font-weight: 600;
+    padding: .25rem .65rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    letter-spacing: .03em;
+    transition: border-color .15s, color .15s, background .15s;
+}
+.btn-customize:hover { border-color: var(--asi-blue); color: var(--asi-blue); }
+.btn-customize.active { border-color: var(--asi-blue); color: var(--asi-blue); background: rgba(0,173,239,.08); }
+
+.deck-customize { margin-top: .1rem; }
+.deck-customize label {
+    font-size: .8rem;
+    color: var(--text-muted);
+    margin-bottom: .5rem;
+    display: block;
+}
+.card-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem;
+    margin-bottom: .75rem;
+}
+/* Base chip — deselected (excluded) */
+.card-chip {
+    font-family: 'Roboto Condensed', sans-serif;
+    font-weight: 600;
+    font-size: .85rem;
+    padding: .3rem .65rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: grab;
+    opacity: .5;
+    transition: background .15s, border-color .15s, color .15s, opacity .15s, box-shadow .15s;
+    line-height: 1;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+}
+.card-chip:hover { opacity: .8; border-color: var(--asi-blue); color: var(--asi-blue); }
+/* Selected (included in deck) */
+.card-chip.on {
+    border-color: var(--asi-blue);
+    background: var(--asi-blue);
+    color: #fff;
+    opacity: 1;
+}
+.card-chip.on:hover { background: var(--asi-blue-dark); border-color: var(--asi-blue-dark); }
+/* Drag states */
+.card-chip.chip-dragging {
+    opacity: .3;
+    cursor: grabbing;
+}
+.card-chip.chip-drag-over {
+    box-shadow: -3px 0 0 var(--asi-blue);
+    border-color: var(--asi-blue);
+}
+.drag-handle {
+    font-size: .7rem;
+    opacity: .45;
+    line-height: 1;
+    pointer-events: none;
+}
+.add-card-row {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+}
+.add-card-input {
+    flex: 1;
+    max-width: 160px;
+    font-size: .85rem;
+    padding: .35rem .6rem;
+    height: auto;
+}
+.btn-add-card {
+    font-family: 'Roboto Condensed', sans-serif;
+    font-weight: 600;
+    font-size: .85rem;
+    padding: .35rem .8rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--asi-blue);
+    background: rgba(0,173,239,.12);
+    color: var(--asi-blue);
+    cursor: pointer;
+    transition: background .15s;
+    white-space: nowrap;
+}
+.btn-add-card:hover:not(:disabled) { background: rgba(0,173,239,.25); }
+.btn-add-card:disabled { opacity: .4; cursor: default; }
+.customize-warning {
+    margin-top: .4rem;
+    font-size: .8rem;
+    color: var(--asi-red);
+    font-family: 'Roboto Condensed', sans-serif;
+}
+
 .room-code-input {
     letter-spacing: .25em;
     text-transform: uppercase;

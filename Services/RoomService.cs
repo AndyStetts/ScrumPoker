@@ -11,7 +11,7 @@ public class RoomService
     public Room? GetRoom(string code) =>
         _rooms.TryGetValue(code.ToUpper(), out var room) ? room : null;
 
-    public (Room Room, Participant Participant) CreateRoom(string hostName, DeckType deckType)
+    public (Room Room, Participant Participant) CreateRoom(string hostName, CardDeck deck)
     {
         var code = GenerateCode();
         var host = new Participant { Name = hostName, IsHost = true };
@@ -20,7 +20,7 @@ public class RoomService
             Code = code,
             HostId = host.Id,
             Participants = [host],
-            Deck = CardDeck.FromDeckType(deckType)
+            Deck = deck
         };
         _rooms[code] = room;
         return (room, host);

@@ -42,7 +42,13 @@ The app opens at `http://localhost:5111`. Only your machine can reach it at this
 
 ## Sharing on Your Local Network
 
-To let teammates on the same Wi-Fi or VPN connect, the `launchSettings.json` is already configured to listen on all interfaces (`0.0.0.0:5111`). Just:
+To let teammates on the same Wi-Fi or VPN connect, change one line in `Properties/launchSettings.json`:
+
+```json
+"applicationUrl": "http://0.0.0.0:5111"
+```
+
+Then:
 
 1. Run the app with `dotnet run`
 2. Find your machine's local IP:
@@ -155,7 +161,7 @@ ScrumPoker/
 ├── wwwroot/
 │   └── app.css               # All styles
 └── Properties/
-    └── launchSettings.json   # Dev server config (port 5111, all interfaces)
+    └── launchSettings.json   # Dev server config (port 5111, localhost by default)
 ```
 
 ## Notes

@@ -205,20 +205,23 @@ public class RoomService
 
     public void Subscribe(string code, Func<Task> callback)
     {
-        _subscriptions.GetOrAdd(code, _ => []).Add(callback);
+        var subs = _subscriptions.GetOrAdd(code, _ => []);
+        lock (subs) subs.Add(callback);
     }
 
     public void Unsubscribe(string code, Func<Task> callback)
     {
         if (_subscriptions.TryGetValue(code, out var subs))
-            subs.Remove(callback);
+            lock (subs) subs.Remove(callback);
     }
 
     private void NotifyRoom(string code)
     {
         if (_subscriptions.TryGetValue(code, out var subs))
         {
-            foreach (var sub in subs.ToList())
+            List<Func<Task>> snapshot;
+            lock (subs) snapshot = subs.ToList();
+            foreach (var sub in snapshot)
                 _ = sub();
         }
     }

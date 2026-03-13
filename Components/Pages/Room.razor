@@ -47,13 +47,18 @@ else
                 </a>
             </div>
             <div class="room-header-center">
-                <span class="room-code-label">Room Code:</span>
-                <span class="room-code-badge">@_room.Code</span>
-                <button class="btn-copy" title="Copy room link" @onclick="CopyLink">📋</button>
-                @if (_copied)
-                {
-                    <span class="copy-feedback">Copied!</span>
-                }
+                <div class="room-share-row">
+                    <span class="room-code-label">Join Link:</span>
+                    <span class="room-code-badge room-url-badge">@_joinUrl</span>
+                    <button class="btn-copy" title="Copy join message" @onclick="CopyUrl">📋</button>
+                    @if (_copiedUrl) { <span class="copy-feedback">Copied!</span> }
+                </div>
+                <div class="room-share-row">
+                    <span class="room-code-label">Room Code:</span>
+                    <span class="room-code-badge">@_room.Code</span>
+                    <button class="btn-copy" title="Copy room code" @onclick="CopyCode">📋</button>
+                    @if (_copiedCode) { <span class="copy-feedback">Copied!</span> }
+                </div>
             </div>
             <div class="room-header-right">
                 <span class="deck-badge">@_room.Deck.Name</span>
@@ -75,8 +80,8 @@ else
                 @if (_isHost && _showAddStory)
                 {
                     <div class="add-story-form">
-                        <input class="form-control" @bind="_newStoryTitle" placeholder="Story title or ticket…"
-                               @onkeydown="OnAddStoryKey" />
+                        <input class="form-control" @bind="_newStoryTitle" @bind:event="oninput"
+                               placeholder="Story title or ticket…" @onkeydown="OnAddStoryKey" />
                         <button class="btn btn-primary btn-sm" @onclick="AddStory"
                                 disabled="@string.IsNullOrWhiteSpace(_newStoryTitle)">Add</button>
                     </div>
@@ -85,7 +90,7 @@ else
                 <ul class="story-list">
                     @foreach (var story in _room.Stories)
                     {
-                        <li class="story-item @(story.Id == _room.CurrentStoryId ? "current" : "") @(story.IsComplete ? "complete" : "")"
+                        <li class="story-item @(story.Id == _room.CurrentStoryId ? "current" : "") @(story.IsComplete ? "complete" : "") @(_isHost ? "host-clickable" : "")"
                             @onclick="() => SelectStory(story.Id)">
                             <div class="story-item-inner">
                                 <span class="story-title">@story.Title</span>
@@ -167,6 +172,44 @@ else
                         }
                     </div>
 
+                    <!-- Vote results summary -->
+                    @if (_room.VotesRevealed)
+                    {
+                        var allGroups = _room.Participants
+                            .Where(p => p.HasVoted)
+                            .GroupBy(p => p.CurrentVote!)
+                            .Select(g => new { Vote = g.Key, Count = g.Count(), Names = g.Select(p => p.Name).ToList() })
+                            .OrderByDescending(x => x.Count)
+                            .ThenBy(x => x.Vote)
+                            .ToList();
+                        var nonCoffeeGroups = allGroups.Where(g => g.Vote != "☕").ToList();
+                        var isConsensus = nonCoffeeGroups.Count == 1;
+
+                        if (allGroups.Any())
+                        {
+                            <div class="vote-results">
+                                @if (isConsensus)
+                                {
+                                    <div class="results-banner consensus-banner">✓ Consensus reached: <strong>@nonCoffeeGroups[0].Vote</strong></div>
+                                }
+                                else if (nonCoffeeGroups.Count > 1)
+                                {
+                                    <div class="results-banner no-consensus-banner">↺ No consensus — team discussion and re-vote required</div>
+                                }
+                                <div class="results-groups">
+                                    @foreach (var g in allGroups)
+                                    {
+                                        <div class="result-group @(isConsensus && g.Vote != "☕" ? "consensus-vote" : "")"
+                                             data-tooltip="@string.Join(", ", g.Names)">
+                                            <div class="result-card">@g.Vote</div>
+                                            <div class="result-count">@g.Count @(g.Count == 1 ? "vote" : "votes")</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+
                     <!-- Card deck (for voting) -->
                     @if (!_room.VotesRevealed)
                     {
@@ -192,7 +235,7 @@ else
                             {
                                 <button class="btn btn-reveal"
                                         @onclick="RevealVotes"
-                                        disabled="@(!_room.Participants.Any(p => p.HasVoted))">
+                                        disabled="@(!_room.Participants.Any(p => p.HasVoted && !p.IsHost))">
                                     Reveal Votes
                                 </button>
                             }
@@ -257,7 +300,7 @@ else
                                     {
                                         <span class="voted-badge">Voted ✓</span>
                                     }
-                                    else
+                                    else if (!_room.VotesRevealed)
                                     {
                                         <span class="waiting-badge">Waiting…</span>
                                     }
@@ -282,7 +325,10 @@ else
     private bool _showAddStory;
     private string _newStoryTitle = string.Empty;
     private string? _selectedEstimate;
-    private bool _copied;
+    private bool _copiedUrl;
+    private bool _copiedCode;
+    private string _origin = string.Empty;
+    private string _joinUrl => string.IsNullOrEmpty(_origin) ? $"/room/{Code}" : $"{_origin}/room/{Code}";
     private string _nameInput = string.Empty;
 
     private Func<Task>? _subscription;
@@ -327,7 +373,17 @@ else
         RoomService.Vote(Code.ToUpper(), _me.Id, card);
     }
 
-    private void RevealVotes() => RoomService.RevealVotes(Code.ToUpper());
+    private void RevealVotes()
+    {
+        RoomService.RevealVotes(Code.ToUpper());
+        // Auto-select the most common vote so Accept is immediately usable
+        _selectedEstimate = _room?.Participants
+            .Where(p => p.CurrentVote is not null && p.CurrentVote != "☕")
+            .GroupBy(p => p.CurrentVote!)
+            .OrderByDescending(g => g.Count())
+            .ThenBy(g => g.Key)
+            .FirstOrDefault()?.Key;
+    }
 
     private void ResetVotes()
     {
@@ -352,7 +408,9 @@ else
     private void AddStory()
     {
         if (string.IsNullOrWhiteSpace(_newStoryTitle)) return;
-        RoomService.AddStory(Code.ToUpper(), _newStoryTitle.Trim());
+        var story = RoomService.AddStory(Code.ToUpper(), _newStoryTitle.Trim());
+        RoomService.SetCurrentStory(Code.ToUpper(), story.Id);
+        _selectedEstimate = null;
         _newStoryTitle = string.Empty;
         _showAddStory = false;
     }
@@ -372,15 +430,30 @@ else
         RoomService.SetCurrentStory(Code.ToUpper(), storyId);
     }
 
-    private async Task CopyLink()
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        var url = Nav.Uri;
-        // Strip the pid query param — share a clean link
-        var baseUrl = url.Contains("?") ? url[..url.IndexOf('?')] : url;
-        await JS.InvokeVoidAsync("navigator.clipboard.writeText", baseUrl);
-        _copied = true;
+        if (firstRender)
+        {
+            _origin = await JS.InvokeAsync<string>("getOrigin");
+            StateHasChanged();
+        }
+    }
+
+    private async Task CopyUrl()
+    {
+        await JS.InvokeVoidAsync("copyText", _joinUrl);
+        _copiedUrl = true;
         await Task.Delay(2000);
-        _copied = false;
+        _copiedUrl = false;
+        StateHasChanged();
+    }
+
+    private async Task CopyCode()
+    {
+        await JS.InvokeVoidAsync("copyText", Code);
+        _copiedCode = true;
+        await Task.Delay(2000);
+        _copiedCode = false;
         StateHasChanged();
     }
 

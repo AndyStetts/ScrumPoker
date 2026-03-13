@@ -21,6 +21,24 @@
     <Routes @rendermode="InteractiveServer" />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script>
+        window.getOrigin = function () { return window.location.origin; };
+        window.copyText = function (text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                return navigator.clipboard.writeText(text);
+            }
+            var el = document.createElement('textarea');
+            el.value = text;
+            el.style.position = 'fixed';
+            el.style.opacity = '0';
+            document.body.appendChild(el);
+            el.focus();
+            el.select();
+            try { document.execCommand('copy'); } catch (e) { }
+            document.body.removeChild(el);
+            return Promise.resolve();
+        };
+    </script>
 </body>
 
 </html>

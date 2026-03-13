@@ -12,5 +12,5 @@ public class Room
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public Story? CurrentStory => Stories.FirstOrDefault(s => s.Id == CurrentStoryId);
-    public bool AllVoted => Participants.Count > 0 && Participants.All(p => p.HasVoted);
+    public bool AllVoted => Participants.Any(p => !p.IsHost) && Participants.Where(p => !p.IsHost).All(p => p.HasVoted);
 }

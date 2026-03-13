@@ -102,7 +102,7 @@ else
                 }
 
                 <ul class="story-list">
-                    @foreach (var story in _room.Stories)
+                    @foreach (var story in _room.Stories.ToList())
                     {
                         <li class="story-item @(story.Id == _room.CurrentStoryId ? "current" : "") @(story.IsComplete ? "complete" : "") @(_isHost ? "host-clickable" : "")"
                             @onclick="() => SelectStory(story.Id)">
@@ -162,7 +162,7 @@ else
 
                     <!-- Participant votes (revealed) or hidden cards -->
                     <div class="votes-grid">
-                        @foreach (var p in _room.Participants)
+                        @foreach (var p in _room.Participants.ToList())
                         {
                             <div class="vote-card-wrapper">
                                 <div class="vote-card @(p.HasVoted ? "voted" : "") @(_room.VotesRevealed ? "revealed" : "")">
@@ -295,7 +295,7 @@ else
                     <h3>Participants</h3>
                 </div>
                 <ul class="participant-list">
-                    @foreach (var p in _room.Participants)
+                    @foreach (var p in _room.Participants.ToList())
                     {
                         var canTransfer = _isHost && !p.IsHost && p.Id != _me.Id;
                         <li class="participant-item @(canTransfer ? "can-transfer" : "")"

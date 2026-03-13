@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ScrumPoker")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f061384024348e4de97ce57c42fa39f0f791237f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d0766ccb2608338218d9272109eff37aa0cbc5fd")]
 [assembly: System.Reflection.AssemblyProductAttribute("ScrumPoker")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ScrumPoker")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

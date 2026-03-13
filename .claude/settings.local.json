@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Hackathon\\\\ScrumPoker''; & ''C:\\\\Program Files\\\\dotnet\\\\dotnet.exe'' new blazor --interactivity Server --no-https -o . --force\")",
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:\\\\Hackathon\\\\ScrumPoker'' -Recurse | Select-Object FullName | Where-Object { $_.FullName -notmatch ''\\\\\\\\obj|\\\\\\\\bin|\\\\\\\\wwwroot\\\\\\\\lib'' }\")"
+    ]
+  }
+}

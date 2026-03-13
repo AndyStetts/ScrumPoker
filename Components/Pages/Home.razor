@@ -1,0 +1,160 @@
+@page "/"
+@inject RoomService RoomService
+@inject NavigationManager Nav
+@using ScrumPoker.Models
+@using ScrumPoker.Services
+
+<PageTitle>Scrum Poker</PageTitle>
+
+<div class="home-container">
+    <div class="home-hero">
+        <picture class="asi-logo-hero">
+            <source media="(prefers-color-scheme: dark)"  srcset="ASI_Logo_FullMark_RGB_Color_OnDark.png" />
+            <source media="(prefers-color-scheme: light)" srcset="ASI_Logo_FullMark_RGB_Color_OnLight.png" />
+            <img src="ASI_Logo_FullMark_RGB_Color_OnDark.png" alt="ASI Logo" />
+        </picture>
+        <h1><span>Scrum</span> Poker</h1>
+        <p class="hero-subtitle">Estimate stories collaboratively, in real time.</p>
+    </div>
+
+    <div class="home-cards">
+        <!-- Create Room -->
+        <div class="home-card @(_activeTab == "create" ? "active" : "")" @onclick='() => _activeTab = "create"'>
+            <div class="card-header">
+                <span class="card-icon">✨</span>
+                <h2>Create a Room</h2>
+            </div>
+
+            @if (_activeTab == "create")
+            {
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input class="form-control" @bind="_createName" @bind:event="oninput"
+                               placeholder="Enter your name" maxlength="30" />
+                    </div>
+                    <div class="form-group">
+                        <label>Card Deck</label>
+                        <div class="deck-options">
+                            @foreach (var dt in Enum.GetValues<DeckType>())
+                            {
+                                <button class="deck-btn @(_selectedDeck == dt ? "selected" : "")"
+                                        @onclick="() => _selectedDeck = dt" @onclick:stopPropagation>
+                                    <span class="deck-name">@DeckLabel(dt)</span>
+                                    <span class="deck-preview">@DeckPreview(dt)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                    @if (_createError is not null)
+                    {
+                        <div class="alert alert-danger">@_createError</div>
+                    }
+                    <button class="btn btn-primary btn-lg w-100"
+                            @onclick="CreateRoom" @onclick:stopPropagation
+                            disabled="@(string.IsNullOrWhiteSpace(_createName))">
+                        Create Room
+                    </button>
+                </div>
+            }
+        </div>
+
+        <!-- Join Room -->
+        <div class="home-card @(_activeTab == "join" ? "active" : "")" @onclick='() => _activeTab = "join"'>
+            <div class="card-header">
+                <span class="card-icon">🚪</span>
+                <h2>Join a Room</h2>
+            </div>
+
+            @if (_activeTab == "join")
+            {
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input class="form-control" @bind="_joinName" @bind:event="oninput"
+                               placeholder="Enter your name" maxlength="30" />
+                    </div>
+                    <div class="form-group">
+                        <label>Room Code</label>
+                        <input class="form-control room-code-input"
+                               value="@_joinCode"
+                               placeholder="e.g. AB3X7K" maxlength="6"
+                               @oninput="e => _joinCode = e.Value?.ToString()?.ToUpper() ?? string.Empty" />
+                    </div>
+                    @if (_joinError is not null)
+                    {
+                        <div class="alert alert-danger">@_joinError</div>
+                    }
+                    <button class="btn btn-secondary btn-lg w-100"
+                            @onclick="JoinRoom" @onclick:stopPropagation
+                            disabled="@(string.IsNullOrWhiteSpace(_joinName) || _joinCode.Length < 6)">
+                        Join Room
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _activeTab = "create";
+    private string _createName = string.Empty;
+    private DeckType _selectedDeck = DeckType.Fibonacci;
+    private string? _createError;
+
+    private string _joinName = string.Empty;
+    private string _joinCode = string.Empty;
+    private string? _joinError;
+
+    private void CreateRoom()
+    {
+        if (string.IsNullOrWhiteSpace(_createName))
+        {
+            _createError = "Please enter your name.";
+            return;
+        }
+
+        var (room, participant) = RoomService.CreateRoom(_createName.Trim(), _selectedDeck);
+        Nav.NavigateTo($"/room/{room.Code}?pid={participant.Id}");
+    }
+
+    private void JoinRoom()
+    {
+        if (string.IsNullOrWhiteSpace(_joinName))
+        {
+            _joinError = "Please enter your name.";
+            return;
+        }
+        if (_joinCode.Length != 6)
+        {
+            _joinError = "Room code must be 6 characters.";
+            return;
+        }
+
+        var result = RoomService.JoinRoom(_joinCode.ToUpper(), _joinName.Trim());
+        if (result is null)
+        {
+            _joinError = $"Room \"{_joinCode.ToUpper()}\" not found. Check the code and try again.";
+            return;
+        }
+
+        var (room, participant) = result.Value;
+        Nav.NavigateTo($"/room/{room.Code}?pid={participant.Id}");
+    }
+
+    private static string DeckLabel(DeckType dt) => dt switch
+    {
+        DeckType.Fibonacci => "Fibonacci",
+        DeckType.TShirt => "T-Shirt Sizes",
+        DeckType.PowersOfTwo => "Powers of 2",
+        _ => dt.ToString()
+    };
+
+    private static string DeckPreview(DeckType dt) => dt switch
+    {
+        DeckType.Fibonacci => "1, 2, 3, 5, 8, 13…",
+        DeckType.TShirt => "XS, S, M, L, XL…",
+        DeckType.PowersOfTwo => "1, 2, 4, 8, 16…",
+        _ => string.Empty
+    };
+}

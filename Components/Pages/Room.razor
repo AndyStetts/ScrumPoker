@@ -1,0 +1,395 @@
+@page "/room/{Code}"
+@implements IDisposable
+@inject RoomService RoomService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@using ScrumPoker.Services
+@using PokerRoom = ScrumPoker.Models.Room
+@using ScrumPoker.Models
+
+<PageTitle>Room @Code | Scrum Poker</PageTitle>
+
+@if (_room is null)
+{
+    <div class="not-found">
+        <h2>Room not found</h2>
+        <p>The room <strong>@Code</strong> doesn't exist or has expired.</p>
+        <a class="btn btn-primary" href="/">Back to Home</a>
+    </div>
+}
+else if (_me is null)
+{
+    <div class="join-prompt">
+        <h2>Join Room <span class="room-code-badge">@Code</span></h2>
+        <div class="form-group">
+            <label>Your Name</label>
+            <input class="form-control" @bind="_nameInput" placeholder="Enter your name" maxlength="30" />
+        </div>
+        <button class="btn btn-primary btn-lg" @onclick="JoinAsLateParticipant"
+                disabled="@string.IsNullOrWhiteSpace(_nameInput)">
+            Join Room
+        </button>
+    </div>
+}
+else
+{
+    <div class="room-layout">
+        <!-- Header -->
+        <header class="room-header">
+            <div class="room-header-left">
+                <a href="/" class="btn-back">← Home</a>
+                <a href="/" class="asi-logo-header">
+                    <picture>
+                        <source media="(prefers-color-scheme: dark)"  srcset="ASI_Logo_FullMark_RGB_Color_OnDark.png" />
+                        <source media="(prefers-color-scheme: light)" srcset="ASI_Logo_FullMark_RGB_Color_OnLight.png" />
+                        <img src="ASI_Logo_FullMark_RGB_Color_OnDark.png" alt="ASI Logo" />
+                    </picture>
+                </a>
+            </div>
+            <div class="room-header-center">
+                <span class="room-code-label">Room Code:</span>
+                <span class="room-code-badge">@_room.Code</span>
+                <button class="btn-copy" title="Copy room link" @onclick="CopyLink">📋</button>
+                @if (_copied)
+                {
+                    <span class="copy-feedback">Copied!</span>
+                }
+            </div>
+            <div class="room-header-right">
+                <span class="deck-badge">@_room.Deck.Name</span>
+                <span class="participant-count">👥 @_room.Participants.Count</span>
+            </div>
+        </header>
+
+        <div class="room-body">
+            <!-- Left panel: Stories -->
+            <aside class="panel-stories">
+                <div class="panel-header">
+                    <h3>Stories</h3>
+                    @if (_isHost)
+                    {
+                        <button class="btn-icon" title="Add story" @onclick="() => _showAddStory = !_showAddStory">＋</button>
+                    }
+                </div>
+
+                @if (_isHost && _showAddStory)
+                {
+                    <div class="add-story-form">
+                        <input class="form-control" @bind="_newStoryTitle" placeholder="Story title or ticket…"
+                               @onkeydown="OnAddStoryKey" />
+                        <button class="btn btn-primary btn-sm" @onclick="AddStory"
+                                disabled="@string.IsNullOrWhiteSpace(_newStoryTitle)">Add</button>
+                    </div>
+                }
+
+                <ul class="story-list">
+                    @foreach (var story in _room.Stories)
+                    {
+                        <li class="story-item @(story.Id == _room.CurrentStoryId ? "current" : "") @(story.IsComplete ? "complete" : "")"
+                            @onclick="() => SelectStory(story.Id)">
+                            <div class="story-item-inner">
+                                <span class="story-title">@story.Title</span>
+                                @if (story.IsComplete && story.FinalEstimate is not null)
+                                {
+                                    <span class="story-estimate">@story.FinalEstimate</span>
+                                }
+                                else if (story.Id == _room.CurrentStoryId)
+                                {
+                                    <span class="story-active-dot"></span>
+                                }
+                            </div>
+                            @if (_isHost)
+                            {
+                                <button class="btn-remove" title="Remove story"
+                                        @onclick="() => RemoveStory(story.Id)" @onclick:stopPropagation>✕</button>
+                            }
+                        </li>
+                    }
+                    @if (!_room.Stories.Any())
+                    {
+                        <li class="story-empty">No stories yet.@(_isHost ? " Add one above." : "")</li>
+                    }
+                </ul>
+            </aside>
+
+            <!-- Center: Voting area -->
+            <main class="panel-voting">
+                @if (_room.CurrentStory is null)
+                {
+                    <div class="no-story">
+                        <div class="no-story-icon">📋</div>
+                        <p>@(_isHost ? "Add a story from the left panel to start estimating." : "Waiting for the host to select a story…")</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="current-story-card">
+                        <div class="current-story-label">Estimating</div>
+                        <div class="current-story-title">@_room.CurrentStory.Title</div>
+                    </div>
+
+                    <!-- Vote status bar -->
+                    <div class="vote-status">
+                        @{
+                            var voted = _room.Participants.Count(p => p.HasVoted);
+                            var total = _room.Participants.Count;
+                        }
+                        <span>@voted / @total voted</span>
+                        @if (_room.AllVoted && !_room.VotesRevealed && _isHost)
+                        {
+                            <span class="all-voted-hint">Everyone has voted!</span>
+                        }
+                    </div>
+
+                    <!-- Participant votes (revealed) or hidden cards -->
+                    <div class="votes-grid">
+                        @foreach (var p in _room.Participants)
+                        {
+                            <div class="vote-card-wrapper">
+                                <div class="vote-card @(p.HasVoted ? "voted" : "") @(_room.VotesRevealed ? "revealed" : "")">
+                                    @if (_room.VotesRevealed && p.HasVoted)
+                                    {
+                                        <span class="vote-value">@p.CurrentVote</span>
+                                    }
+                                    else if (p.HasVoted)
+                                    {
+                                        <span class="vote-hidden">✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="vote-waiting">…</span>
+                                    }
+                                </div>
+                                <span class="voter-name @(p.Id == _me.Id ? "me" : "")">
+                                    @p.Name@(p.IsHost ? " 👑" : "")
+                                </span>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Card deck (for voting) -->
+                    @if (!_room.VotesRevealed)
+                    {
+                        <div class="deck-area">
+                            <p class="deck-label">@(_me.HasVoted ? "Change your vote:" : "Pick a card:")</p>
+                            <div class="deck-cards">
+                                @foreach (var card in _room.Deck.Cards)
+                                {
+                                    <button class="playing-card @(_me.CurrentVote == card ? "selected" : "")"
+                                            @onclick="() => CastVote(card)">
+                                        @card
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Host controls -->
+                    @if (_isHost)
+                    {
+                        <div class="host-controls">
+                            @if (!_room.VotesRevealed)
+                            {
+                                <button class="btn btn-reveal"
+                                        @onclick="RevealVotes"
+                                        disabled="@(!_room.Participants.Any(p => p.HasVoted))">
+                                    Reveal Votes
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="reveal-actions">
+                                    <div class="final-estimate-row">
+                                        <label>Final Estimate:</label>
+                                        <div class="estimate-options">
+                                            @foreach (var card in _room.Deck.Cards.Where(c => c != "☕"))
+                                            {
+                                                <button class="est-btn @(_selectedEstimate == card ? "selected" : "")"
+                                                        @onclick="() => _selectedEstimate = card">
+                                                    @card
+                                                </button>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="reveal-buttons">
+                                        <button class="btn btn-success"
+                                                @onclick="AcceptEstimate"
+                                                disabled="@(_selectedEstimate is null)">
+                                            ✓ Accept
+                                        </button>
+                                        <button class="btn btn-outline" @onclick="ResetVotes">
+                                            ↺ Re-vote
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else if (_room.VotesRevealed)
+                    {
+                        <div class="waiting-host">Waiting for host to finalize estimate…</div>
+                    }
+                }
+            </main>
+
+            <!-- Right panel: Participants -->
+            <aside class="panel-participants">
+                <div class="panel-header">
+                    <h3>Participants</h3>
+                </div>
+                <ul class="participant-list">
+                    @foreach (var p in _room.Participants)
+                    {
+                        <li class="participant-item">
+                            <div class="participant-avatar">@p.Name[0].ToString().ToUpper()</div>
+                            <div class="participant-info">
+                                <span class="participant-name">
+                                    @p.Name
+                                    @if (p.IsHost) { <span class="host-badge">Host</span> }
+                                    @if (p.Id == _me.Id) { <span class="you-badge">You</span> }
+                                </span>
+                                <span class="participant-status">
+                                    @if (_room.VotesRevealed && p.HasVoted)
+                                    {
+                                        <span class="vote-revealed-badge">@p.CurrentVote</span>
+                                    }
+                                    else if (p.HasVoted)
+                                    {
+                                        <span class="voted-badge">Voted ✓</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="waiting-badge">Waiting…</span>
+                                    }
+                                </span>
+                            </div>
+                        </li>
+                    }
+                </ul>
+            </aside>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = string.Empty;
+    [SupplyParameterFromQuery(Name = "pid")] public string? ParticipantId { get; set; }
+
+    private PokerRoom? _room;
+    private Participant? _me;
+    private bool _isHost;
+
+    private bool _showAddStory;
+    private string _newStoryTitle = string.Empty;
+    private string? _selectedEstimate;
+    private bool _copied;
+    private string _nameInput = string.Empty;
+
+    private Func<Task>? _subscription;
+
+    protected override void OnInitialized()
+    {
+        _room = RoomService.GetRoom(Code);
+        if (_room is null) return;
+
+        if (ParticipantId is not null)
+            _me = _room.Participants.FirstOrDefault(p => p.Id == ParticipantId);
+
+        _isHost = _me?.IsHost ?? false;
+
+        _subscription = async () => await InvokeAsync(() =>
+        {
+            _room = RoomService.GetRoom(Code);
+            if (_room is not null && _me is not null)
+            {
+                _me = _room.Participants.FirstOrDefault(p => p.Id == _me.Id);
+                _isHost = _me?.IsHost ?? false;
+            }
+            StateHasChanged();
+        });
+
+        RoomService.Subscribe(Code.ToUpper(), _subscription);
+    }
+
+    private void JoinAsLateParticipant()
+    {
+        if (string.IsNullOrWhiteSpace(_nameInput) || _room is null) return;
+        var result = RoomService.JoinRoom(Code, _nameInput.Trim());
+        if (result is null) return;
+        (_room, _me) = result.Value;
+        _isHost = _me.IsHost;
+        Nav.NavigateTo($"/room/{Code}?pid={_me.Id}", replace: true);
+    }
+
+    private void CastVote(string card)
+    {
+        if (_me is null || _room is null) return;
+        RoomService.Vote(Code.ToUpper(), _me.Id, card);
+    }
+
+    private void RevealVotes() => RoomService.RevealVotes(Code.ToUpper());
+
+    private void ResetVotes()
+    {
+        _selectedEstimate = null;
+        RoomService.ResetVotes(Code.ToUpper());
+    }
+
+    private void AcceptEstimate()
+    {
+        if (_selectedEstimate is null || _room?.CurrentStory is null) return;
+        RoomService.SetFinalEstimate(Code.ToUpper(), _room.CurrentStory.Id, _selectedEstimate);
+        _selectedEstimate = null;
+
+        // Auto-advance to next incomplete story
+        var next = _room.Stories.FirstOrDefault(s => !s.IsComplete && s.Id != _room.CurrentStoryId);
+        if (next is not null)
+            RoomService.SetCurrentStory(Code.ToUpper(), next.Id);
+        else
+            RoomService.ResetVotes(Code.ToUpper());
+    }
+
+    private void AddStory()
+    {
+        if (string.IsNullOrWhiteSpace(_newStoryTitle)) return;
+        RoomService.AddStory(Code.ToUpper(), _newStoryTitle.Trim());
+        _newStoryTitle = string.Empty;
+        _showAddStory = false;
+    }
+
+    private void OnAddStoryKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AddStory();
+    }
+
+    private void RemoveStory(string storyId) =>
+        RoomService.RemoveStory(Code.ToUpper(), storyId);
+
+    private void SelectStory(string storyId)
+    {
+        if (!_isHost || storyId == _room?.CurrentStoryId) return;
+        _selectedEstimate = null;
+        RoomService.SetCurrentStory(Code.ToUpper(), storyId);
+    }
+
+    private async Task CopyLink()
+    {
+        var url = Nav.Uri;
+        // Strip the pid query param — share a clean link
+        var baseUrl = url.Contains("?") ? url[..url.IndexOf('?')] : url;
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", baseUrl);
+        _copied = true;
+        await Task.Delay(2000);
+        _copied = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        if (_subscription is not null)
+            RoomService.Unsubscribe(Code.ToUpper(), _subscription);
+
+        if (_me is not null && _room is not null)
+            RoomService.LeaveRoom(Code.ToUpper(), _me.Id);
+    }
+}

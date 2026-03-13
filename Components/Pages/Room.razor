@@ -27,6 +27,10 @@ else if (_me is null)
                    placeholder="Enter your name" maxlength="30"
                    @onkeydown="@(e => { if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_nameInput)) JoinAsLateParticipant(); })" />
         </div>
+        @if (_joinError is not null)
+        {
+            <div class="alert alert-danger">@_joinError</div>
+        }
         <button class="btn btn-primary btn-lg" @onclick="JoinAsLateParticipant"
                 disabled="@string.IsNullOrWhiteSpace(_nameInput)">
             Join Room
@@ -410,9 +414,16 @@ else
         RoomService.Subscribe(Code.ToUpper(), _subscription);
     }
 
+    private string? _joinError;
+
     private void JoinAsLateParticipant()
     {
         if (string.IsNullOrWhiteSpace(_nameInput) || _room is null) return;
+        if (_room.Participants.Count >= 30)
+        {
+            _joinError = "This room is full (30 participants maximum).";
+            return;
+        }
         var result = RoomService.JoinRoom(Code, _nameInput.Trim());
         if (result is null) return;
         (_room, _me) = result.Value;
@@ -428,7 +439,8 @@ else
 
     private void RevealVotes()
     {
-        RoomService.RevealVotes(Code.ToUpper());
+        if (_me is null) return;
+        RoomService.RevealVotes(Code.ToUpper(), _me.Id);
         // Auto-select the most common vote so Accept is immediately usable
         _selectedEstimate = _room?.Participants
             .Where(p => p.CurrentVote is not null && p.CurrentVote != "☕")
@@ -440,29 +452,31 @@ else
 
     private void ResetVotes()
     {
+        if (_me is null) return;
         _selectedEstimate = null;
-        RoomService.ResetVotes(Code.ToUpper());
+        RoomService.ResetVotes(Code.ToUpper(), _me.Id);
     }
 
     private void AcceptEstimate()
     {
-        if (_selectedEstimate is null || _room?.CurrentStory is null) return;
-        RoomService.SetFinalEstimate(Code.ToUpper(), _room.CurrentStory.Id, _selectedEstimate);
+        if (_me is null || _selectedEstimate is null || _room?.CurrentStory is null) return;
+        RoomService.SetFinalEstimate(Code.ToUpper(), _me.Id, _room.CurrentStory.Id, _selectedEstimate);
         _selectedEstimate = null;
 
         // Auto-advance to next incomplete story
         var next = _room.Stories.FirstOrDefault(s => !s.IsComplete && s.Id != _room.CurrentStoryId);
         if (next is not null)
-            RoomService.SetCurrentStory(Code.ToUpper(), next.Id);
+            RoomService.SetCurrentStory(Code.ToUpper(), _me.Id, next.Id);
         else
-            RoomService.ResetVotes(Code.ToUpper());
+            RoomService.ResetVotes(Code.ToUpper(), _me.Id);
     }
 
     private void AddStory()
     {
-        if (string.IsNullOrWhiteSpace(_newStoryTitle)) return;
-        var story = RoomService.AddStory(Code.ToUpper(), _newStoryTitle.Trim());
-        RoomService.SetCurrentStory(Code.ToUpper(), story.Id);
+        if (_me is null || string.IsNullOrWhiteSpace(_newStoryTitle)) return;
+        var story = RoomService.AddStory(Code.ToUpper(), _me.Id, _newStoryTitle.Trim());
+        if (story is null) return;
+        RoomService.SetCurrentStory(Code.ToUpper(), _me.Id, story.Id);
         _selectedEstimate = null;
         _newStoryTitle = string.Empty;
         _showAddStory = false;
@@ -473,20 +487,24 @@ else
         if (e.Key == "Enter") AddStory();
     }
 
-    private void RemoveStory(string storyId) =>
-        RoomService.RemoveStory(Code.ToUpper(), storyId);
+    private void RemoveStory(string storyId)
+    {
+        if (_me is null) return;
+        RoomService.RemoveStory(Code.ToUpper(), _me.Id, storyId);
+    }
 
     private void DoTransferHost(string participantId)
     {
-        RoomService.TransferHost(Code.ToUpper(), participantId);
+        if (_me is null) return;
+        RoomService.TransferHost(Code.ToUpper(), _me.Id, participantId);
         _focusedParticipantId = null;
     }
 
     private void SelectStory(string storyId)
     {
-        if (!_isHost || storyId == _room?.CurrentStoryId) return;
+        if (_me is null || !_isHost || storyId == _room?.CurrentStoryId) return;
         _selectedEstimate = null;
-        RoomService.SetCurrentStory(Code.ToUpper(), storyId);
+        RoomService.SetCurrentStory(Code.ToUpper(), _me.Id, storyId);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

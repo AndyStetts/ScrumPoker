@@ -276,6 +276,18 @@
             return;
         }
 
+        var existing = RoomService.GetRoom(_joinCode.ToUpper());
+        if (existing is null)
+        {
+            _joinError = $"Room \"{_joinCode.ToUpper()}\" not found. Check the code and try again.";
+            return;
+        }
+        if (existing.Participants.Count >= 30)
+        {
+            _joinError = "This room is full (30 participants maximum).";
+            return;
+        }
+
         var result = RoomService.JoinRoom(_joinCode.ToUpper(), _joinName.Trim());
         if (result is null)
         {

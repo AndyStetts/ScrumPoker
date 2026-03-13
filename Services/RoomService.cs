@@ -30,6 +30,7 @@ public class RoomService
     {
         var room = GetRoom(code.ToUpper());
         if (room is null) return null;
+        if (room.Participants.Count >= 30) return null;
 
         var participant = new Participant { Name = participantName };
         lock (room.Participants)
@@ -62,14 +63,17 @@ public class RoomService
         NotifyRoom(code);
     }
 
-    public void TransferHost(string code, string newHostId)
+    public void TransferHost(string code, string requesterId, string newHostId)
     {
         var room = GetRoom(code);
         if (room is null) return;
 
+        // Only the current host may transfer host rights
+        if (room.HostId != requesterId) return;
+
         var currentHost = room.Participants.FirstOrDefault(p => p.IsHost);
         var newHost = room.Participants.FirstOrDefault(p => p.Id == newHostId);
-        if (newHost is null) return;
+        if (newHost is null || newHost.Id == requesterId) return;
 
         if (currentHost is not null)
             currentHost.IsHost = false;
@@ -97,18 +101,18 @@ public class RoomService
         NotifyRoom(code);
     }
 
-    public void RevealVotes(string code)
+    public void RevealVotes(string code, string requesterId)
     {
         var room = GetRoom(code);
-        if (room is null) return;
+        if (room is null || room.HostId != requesterId) return;
         room.VotesRevealed = true;
         NotifyRoom(code);
     }
 
-    public void ResetVotes(string code)
+    public void ResetVotes(string code, string requesterId)
     {
         var room = GetRoom(code);
-        if (room is null) return;
+        if (room is null || room.HostId != requesterId) return;
 
         room.VotesRevealed = false;
         foreach (var p in room.Participants)
@@ -120,29 +124,28 @@ public class RoomService
         NotifyRoom(code);
     }
 
-    public Story AddStory(string code, string title)
+    public Story? AddStory(string code, string requesterId, string title)
     {
-        var room = GetRoom(code) ?? throw new InvalidOperationException("Room not found");
+        var room = GetRoom(code);
+        if (room is null || room.HostId != requesterId) return null;
+
         var story = new Story { Title = title };
         lock (room.Stories)
         {
             room.Stories.Add(story);
         }
 
-        // Auto-select if it's the first story
         if (room.CurrentStoryId is null)
-        {
             room.CurrentStoryId = story.Id;
-        }
 
         NotifyRoom(code);
         return story;
     }
 
-    public void RemoveStory(string code, string storyId)
+    public void RemoveStory(string code, string requesterId, string storyId)
     {
         var room = GetRoom(code);
-        if (room is null) return;
+        if (room is null || room.HostId != requesterId) return;
 
         lock (room.Stories)
         {
@@ -160,10 +163,10 @@ public class RoomService
         NotifyRoom(code);
     }
 
-    public void SetCurrentStory(string code, string storyId)
+    public void SetCurrentStory(string code, string requesterId, string storyId)
     {
         var room = GetRoom(code);
-        if (room is null) return;
+        if (room is null || room.HostId != requesterId) return;
 
         room.CurrentStoryId = storyId;
         room.VotesRevealed = false;
@@ -185,10 +188,10 @@ public class RoomService
         NotifyRoom(code);
     }
 
-    public void SetFinalEstimate(string code, string storyId, string estimate)
+    public void SetFinalEstimate(string code, string requesterId, string storyId, string estimate)
     {
         var room = GetRoom(code);
-        if (room is null) return;
+        if (room is null || room.HostId != requesterId) return;
 
         var story = room.Stories.FirstOrDefault(s => s.Id == storyId);
         if (story is not null)

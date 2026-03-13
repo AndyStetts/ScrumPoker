@@ -13,5 +13,5 @@ public class Room
     public string? HostTransferMessage { get; set; }
 
     public Story? CurrentStory => Stories.FirstOrDefault(s => s.Id == CurrentStoryId);
-    public bool AllVoted => Participants.Any(p => !p.IsHost) && Participants.Where(p => !p.IsHost).All(p => p.HasVoted);
+    public bool AllVoted => Participants.Any() && Participants.Where(p => !p.IsHost).All(p => p.HasVoted);
 }

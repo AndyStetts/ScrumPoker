@@ -56,7 +56,27 @@ public class RoomService
             var newHost = room.Participants[0];
             newHost.IsHost = true;
             room.HostId = newHost.Id;
+            room.HostTransferMessage = $"{newHost.Name} is now the Host of this session";
         }
+
+        NotifyRoom(code);
+    }
+
+    public void TransferHost(string code, string newHostId)
+    {
+        var room = GetRoom(code);
+        if (room is null) return;
+
+        var currentHost = room.Participants.FirstOrDefault(p => p.IsHost);
+        var newHost = room.Participants.FirstOrDefault(p => p.Id == newHostId);
+        if (newHost is null) return;
+
+        if (currentHost is not null)
+            currentHost.IsHost = false;
+
+        newHost.IsHost = true;
+        room.HostId = newHostId;
+        room.HostTransferMessage = $"{newHost.Name} is now the Host of this session";
 
         NotifyRoom(code);
     }

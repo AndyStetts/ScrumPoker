@@ -82,4 +82,4 @@ C:\Hackathon\ScrumPoker\obj\Debug\net10.0\ref\ScrumPoker.dll
 C:\Hackathon\ScrumPoker\obj\Debug\net10.0\compressed\xt7tldm21g-{0}-xfcu1ty6z2-xfcu1ty6z2.gz
 C:\Hackathon\ScrumPoker\obj\Debug\net10.0\compressed\btrxwjo312-{0}-xfcu1ty6z2-xfcu1ty6z2.gz
 C:\Hackathon\ScrumPoker\obj\Debug\net10.0\ScrumPoker.sourcelink.json
-C:\Hackathon\ScrumPoker\obj\Debug\net10.0\compressed\n8w6a1d2bc-{0}-gcsos8fzy4-gcsos8fzy4.gz
+C:\Hackathon\ScrumPoker\obj\Debug\net10.0\compressed\n8w6a1d2bc-{0}-w3r0sly3ez-w3r0sly3ez.gz

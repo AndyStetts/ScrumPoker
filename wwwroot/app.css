@@ -986,6 +986,49 @@ a:hover { text-decoration: underline; }
     font-size: .85rem;
 }
 
+/* Host transfer notification banner */
+.host-transfer-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: .6rem;
+    padding: .75rem 1.5rem;
+    background: linear-gradient(90deg, rgba(253,208,0,.18) 0%, rgba(253,208,0,.1) 100%);
+    border-bottom: 2px solid var(--asi-yellow);
+    color: var(--asi-yellow);
+    font-family: 'Roboto Condensed', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: .03em;
+    text-align: center;
+    flex-shrink: 0;
+    animation: banner-slide-in .3s ease-out;
+}
+.host-transfer-icon { font-size: 1.2rem; }
+@keyframes banner-slide-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Transfer host button */
+.participant-item.can-transfer { cursor: pointer; }
+.participant-item.can-transfer:hover { background: rgba(253,208,0,.05); }
+.btn-transfer-host {
+    flex-shrink: 0;
+    padding: .25rem .6rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(253,208,0,.5);
+    background: rgba(253,208,0,.1);
+    color: var(--asi-yellow);
+    font-family: 'Roboto Condensed', sans-serif;
+    font-size: .75rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, border-color .15s;
+}
+.btn-transfer-host:hover { background: rgba(253,208,0,.22); border-color: var(--asi-yellow); }
+
 /* Mobile tab bar — hidden on desktop/tablet */
 .mobile-tab-bar { display: none; }
 

@@ -68,6 +68,14 @@ else
             </div>
         </header>
 
+        @if (_notification is not null)
+        {
+            <div class="host-transfer-banner">
+                <span class="host-transfer-icon">👑</span>
+                @_notification
+            </div>
+        }
+
         <div class="room-body">
             <!-- Left panel: Stories -->
             <aside class="panel-stories @(_mobileTab == "stories" ? "mobile-active" : "")">
@@ -285,7 +293,11 @@ else
                 <ul class="participant-list">
                     @foreach (var p in _room.Participants)
                     {
-                        <li class="participant-item">
+                        var canTransfer = _isHost && !p.IsHost && p.Id != _me.Id;
+                        <li class="participant-item @(canTransfer ? "can-transfer" : "")"
+                            @onmouseenter="() => { if (canTransfer) _focusedParticipantId = p.Id; }"
+                            @onmouseleave="() => { if (_focusedParticipantId == p.Id) _focusedParticipantId = null; }"
+                            @onclick="() => { if (canTransfer) _focusedParticipantId = (_focusedParticipantId == p.Id ? null : p.Id); }">
                             <div class="participant-avatar">@p.Name[0].ToString().ToUpper()</div>
                             <div class="participant-info">
                                 <span class="participant-name">
@@ -308,6 +320,13 @@ else
                                     }
                                 </span>
                             </div>
+                            @if (canTransfer && _focusedParticipantId == p.Id)
+                            {
+                                <button class="btn-transfer-host" title="Make host"
+                                        @onclick="() => DoTransferHost(p.Id)" @onclick:stopPropagation>
+                                    👑 Make Host
+                                </button>
+                            }
                         </li>
                     }
                 </ul>
@@ -341,6 +360,9 @@ else
     private bool _isHost;
 
     private string _mobileTab = "vote";
+    private string? _focusedParticipantId;
+    private string? _notification;
+    private string? _shownNotification;
 
     private bool _showAddStory;
     private string _newStoryTitle = string.Empty;
@@ -363,7 +385,7 @@ else
 
         _isHost = _me?.IsHost ?? false;
 
-        _subscription = async () => await InvokeAsync(() =>
+        _subscription = async () => await InvokeAsync(async () =>
         {
             _room = RoomService.GetRoom(Code);
             if (_room is not null && _me is not null)
@@ -371,6 +393,17 @@ else
                 _me = _room.Participants.FirstOrDefault(p => p.Id == _me.Id);
                 _isHost = _me?.IsHost ?? false;
             }
+
+            var msg = _room?.HostTransferMessage;
+            if (msg is not null && msg != _shownNotification)
+            {
+                _shownNotification = msg;
+                _notification = msg;
+                StateHasChanged();
+                await Task.Delay(5000);
+                _notification = null;
+            }
+
             StateHasChanged();
         });
 
@@ -442,6 +475,12 @@ else
 
     private void RemoveStory(string storyId) =>
         RoomService.RemoveStory(Code.ToUpper(), storyId);
+
+    private void DoTransferHost(string participantId)
+    {
+        RoomService.TransferHost(Code.ToUpper(), participantId);
+        _focusedParticipantId = null;
+    }
 
     private void SelectStory(string storyId)
     {

@@ -23,7 +23,9 @@ else if (_me is null)
         <h2>Join Room <span class="room-code-badge">@Code</span></h2>
         <div class="form-group">
             <label>Your Name</label>
-            <input class="form-control" @bind="_nameInput" placeholder="Enter your name" maxlength="30" />
+            <input class="form-control" @bind="_nameInput" @bind:event="oninput"
+                   placeholder="Enter your name" maxlength="30"
+                   @onkeydown="@(e => { if (e.Key == "Enter" && !string.IsNullOrWhiteSpace(_nameInput)) JoinAsLateParticipant(); })" />
         </div>
         <button class="btn btn-primary btn-lg" @onclick="JoinAsLateParticipant"
                 disabled="@string.IsNullOrWhiteSpace(_nameInput)">
@@ -68,7 +70,7 @@ else
 
         <div class="room-body">
             <!-- Left panel: Stories -->
-            <aside class="panel-stories">
+            <aside class="panel-stories @(_mobileTab == "stories" ? "mobile-active" : "")">
                 <div class="panel-header">
                     <h3>Stories</h3>
                     @if (_isHost)
@@ -118,7 +120,7 @@ else
             </aside>
 
             <!-- Center: Voting area -->
-            <main class="panel-voting">
+            <main class="panel-voting @(_mobileTab == "vote" ? "mobile-active" : "")">
                 @if (_room.CurrentStory is null)
                 {
                     <div class="no-story">
@@ -276,7 +278,7 @@ else
             </main>
 
             <!-- Right panel: Participants -->
-            <aside class="panel-participants">
+            <aside class="panel-participants @(_mobileTab == "players" ? "mobile-active" : "")">
                 <div class="panel-header">
                     <h3>Participants</h3>
                 </div>
@@ -311,6 +313,22 @@ else
                 </ul>
             </aside>
         </div>
+
+        <!-- Mobile tab bar -->
+        <nav class="mobile-tab-bar">
+            <button class="mobile-tab @(_mobileTab == "stories" ? "active" : "")" @onclick='() => _mobileTab = "stories"'>
+                <span class="mobile-tab-icon">📋</span>
+                <span class="mobile-tab-label">Stories</span>
+            </button>
+            <button class="mobile-tab @(_mobileTab == "vote" ? "active" : "")" @onclick='() => _mobileTab = "vote"'>
+                <span class="mobile-tab-icon">🃏</span>
+                <span class="mobile-tab-label">Vote</span>
+            </button>
+            <button class="mobile-tab @(_mobileTab == "players" ? "active" : "")" @onclick='() => _mobileTab = "players"'>
+                <span class="mobile-tab-icon">👥</span>
+                <span class="mobile-tab-label">Players</span>
+            </button>
+        </nav>
     </div>
 }
 
@@ -321,6 +339,8 @@ else
     private PokerRoom? _room;
     private Participant? _me;
     private bool _isHost;
+
+    private string _mobileTab = "vote";
 
     private bool _showAddStory;
     private string _newStoryTitle = string.Empty;
@@ -443,6 +463,7 @@ else
     {
         await JS.InvokeVoidAsync("copyText", _joinUrl);
         _copiedUrl = true;
+        StateHasChanged();
         await Task.Delay(2000);
         _copiedUrl = false;
         StateHasChanged();
@@ -452,6 +473,7 @@ else
     {
         await JS.InvokeVoidAsync("copyText", Code);
         _copiedCode = true;
+        StateHasChanged();
         await Task.Delay(2000);
         _copiedCode = false;
         StateHasChanged();

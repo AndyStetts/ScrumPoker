@@ -986,14 +986,58 @@ a:hover { text-decoration: underline; }
     font-size: .85rem;
 }
 
+/* Mobile tab bar — hidden on desktop/tablet */
+.mobile-tab-bar { display: none; }
+
 /* ── Responsive ── */
 @media (max-width: 900px) {
     .room-body { grid-template-columns: 200px 1fr; }
     .panel-participants { display: none; }
 }
 @media (max-width: 600px) {
-    .room-body { grid-template-columns: 1fr; }
-    .panel-stories { display: none; }
     .room-header { flex-wrap: wrap; }
     .home-cards { max-width: 100%; }
+
+    /* Switch to single-column; all panels hidden until tab activates one */
+    .room-body { grid-template-columns: 1fr; }
+    .panel-stories,
+    .panel-voting,
+    .panel-participants { display: none; }
+    .panel-stories.mobile-active { display: flex; }
+    .panel-voting.mobile-active  { display: flex; }
+    .panel-participants.mobile-active { display: flex; }
+
+    /* Show the tab bar */
+    .mobile-tab-bar {
+        display: flex;
+        flex-shrink: 0;
+        border-top: 1px solid var(--border);
+        background: var(--surface);
+    }
+    .mobile-tab {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: .2rem;
+        padding: .45rem .25rem;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color .15s, background .15s;
+    }
+    .mobile-tab.active {
+        color: var(--asi-blue);
+        background: rgba(0,173,239,.07);
+    }
+    .mobile-tab-icon { font-size: 1.25rem; line-height: 1; }
+    .mobile-tab-label {
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: .65rem;
+        font-weight: 700;
+        letter-spacing: .05em;
+        text-transform: uppercase;
+    }
 }

@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Bash(powershell.exe -Command \"Set-Location ''C:\\\\Hackathon\\\\ScrumPoker''; & ''C:\\\\Program Files\\\\dotnet\\\\dotnet.exe'' new blazor --interactivity Server --no-https -o . --force\")",
-      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:\\\\Hackathon\\\\ScrumPoker'' -Recurse | Select-Object FullName | Where-Object { $_.FullName -notmatch ''\\\\\\\\obj|\\\\\\\\bin|\\\\\\\\wwwroot\\\\\\\\lib'' }\")"
+      "Bash(powershell.exe -Command \"Get-ChildItem -Path ''C:\\\\Hackathon\\\\ScrumPoker'' -Recurse | Select-Object FullName | Where-Object { $_.FullName -notmatch ''\\\\\\\\obj|\\\\\\\\bin|\\\\\\\\wwwroot\\\\\\\\lib'' }\")",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(pip install:*)",
+      "Bash(python -c \"from PIL import Image; img = Image.open\\(''C:/Hackathon/ScrumPoker/wwwroot/ASI_Logo_FullMark_RGB_Color_OnDark.png''\\); print\\(img.size, img.mode\\)\")",
+      "Bash(where python3:*)",
+      "Bash(where python:*)",
+      "Bash(ls /c/Python*/python.exe /c/Users/AndyStettler/AppData/Local/Programs/Python/*/python.exe)",
+      "Bash(pip --version)",
+      "Bash(conda --version)",
+      "Read(//c/Program Files/**)",
+      "Read(//c/ProgramData/anaconda3/**)",
+      "Read(//c/Users/AndyStettler/anaconda3/**)",
+      "Read(//c/Users/AndyStettler/miniconda3/**)",
+      "Bash(cmd.exe /c \"where python\")",
+      "Bash(cmd.exe /c \"where py\")",
+      "Bash(npm --version)",
+      "Bash(dotnet --version)",
+      "Bash(mkdir -p \"/c/Hackathon/PdfGenerator\")",
+      "Read(//c/Hackathon/**)",
+      "Bash(dotnet new:*)",
+      "Bash(dotnet add:*)",
+      "Bash(dotnet run:*)"
     ]
   }
 }

@@ -28,3 +28,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Local files
+PRESENTATION_SCRIPT.md
+*.pdf

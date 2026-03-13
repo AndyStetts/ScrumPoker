@@ -14,6 +14,12 @@ A real-time collaborative story pointing tool built for ASI teams. No account re
 - **Mobile-friendly** — tab-based navigation for phones and tablets
 - **No install for participants** — join from any browser via a room code or link
 
+## Screenshots
+
+| Home | Voting in Progress | Results Revealed | Mobile |
+|------|--------------------|-----------------|--------|
+| ![Home](docs/screenshots/home.png) | ![Voting](docs/screenshots/voting.png) | ![Revealed](docs/screenshots/revealed.png) | ![Mobile](docs/screenshots/mobile.png) |
+
 ## Prerequisites
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
@@ -27,7 +33,7 @@ dotnet --version
 ## Running Locally
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/AndyStetts/ScrumPoker
 cd ScrumPoker
 dotnet run
 ```
@@ -157,3 +163,5 @@ ScrumPoker/
 - **State is in-memory** — all rooms and votes are lost if the server restarts. This is intentional for a lightweight dev/demo tool.
 - **No authentication** — anyone with the room code can join. Rooms are ephemeral and codes are randomly generated.
 - **Room limit** — rooms support up to 30 participants.
+
+
